@@ -1,0 +1,133 @@
+import tkinter
+import tkinter as tk
+import tkinter.ttk as ttk
+from tkinter import filedialog, messagebox
+
+
+class Quiz:
+    def __init__(self, master, filename):
+        self.master = master
+        self.master.title("Quiz")
+        self.filename = filename
+        self.questions = []
+        self.answers = []
+        self.choices = []
+        self.correct_answers = []
+        self.incorrect_answers = []
+        self.current_question = 0
+        self.score = 0
+
+        self.read_file()
+        self.create_widgets()
+
+    def read_file(self):
+        with open(self.filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            for i in range(0, len(lines), 6):
+                if i + 4 > len(lines):
+                    break
+                question, choice1, choice2, choice3, choice4, answer = lines[i:i + 6]
+                self.questions.append(question.strip())
+                self.choices.append([choice.strip() for choice in [choice1, choice2, choice3, choice4]])
+                self.answers.append(answer.strip())
+
+    def create_widgets(self):
+        style = ttk.Style()
+        style.configure('TFrame', background='#FFFFFF')
+        style.configure('TLabel', background='#FFFFFF', foreground='#333333', font=('Arial', 14))
+        style.configure('TRadiobutton', background='#FFFFFF', foreground='#333333', font=('Arial', 12))
+
+        self.master.configure(bg='#FFFFFF')
+
+        frame = ttk.Frame(self.master)
+        frame.pack(padx=20, pady=20)
+
+        self.question_label = ttk.Label(frame, text=self.questions[self.current_question] + "\n(Выберите один вариант "
+                                                                                            "ответа)")
+        self.question_label.pack(padx=10, pady=10)
+
+        self.answer_var = tk.StringVar()
+        self.answer_var.set(self.choices[self.current_question][0])
+        for i in range(4):
+            choice = self.choices[self.current_question][i]
+            radio_button = ttk.Radiobutton(frame, text=choice, variable=self.answer_var, value=choice)
+            radio_button.pack(padx=10, pady=2)
+
+        self.next_button = ttk.Button(frame, text="Следующий", command=self.check_answer)
+        self.next_button.pack(padx=10, pady=10)
+
+        self.quit_button = ttk.Button(frame, text="Выйти", command=self.master.quit)
+        self.quit_button.pack(padx=10, pady=10)
+
+        self.result_label = ttk.Label(frame)
+        self.correct_answers_label = ttk.Label(frame)
+        self.incorrect_answers_label = ttk.Label(frame)
+        # Set window size
+        self.master.geometry('500x400')
+
+    def check_answer(self):
+
+        answer = self.answer_var.get()
+        if answer[0].lower() == self.answers[self.current_question].lower():
+            self.score += 1
+            self.correct_answers.append(str(self.current_question + 1) + ") " + answer[0])
+        else:
+            self.incorrect_answers.append(str(self.current_question + 1) + ") " + answer[0])
+        self.current_question += 1
+        if self.current_question == len(self.questions):
+            self.show_result()
+        else:
+            self.question_label.config(text=self.questions[self.current_question] + "\n(Выберите один вариант "
+                                                                                    "ответа)")
+            self.answer_var.set('')
+            i = 0
+            for widget in self.master.winfo_children()[0].winfo_children():
+                if isinstance(widget, ttk.Radiobutton):
+                    widget.config(text=self.choices[self.current_question][i],
+                                  value=self.choices[self.current_question][i])
+                    i += 1
+
+    def show_result(self):
+        print(self.correct_answers)
+        print(self.incorrect_answers)
+        result_text = f"Правильно {self.score} из {len(self.questions)}"
+
+        correct_answers_text = f"Правильные ответы: {self.correct_answers}"
+        incorrect_answers_text = f"Неправильные ответы: {self.incorrect_answers}"
+        self.result_label.config(text=result_text)
+        self.result_label.pack(padx=10, pady=10)
+        self.correct_answers_label.config(text=correct_answers_text)
+        self.correct_answers_label.pack(padx=10, pady=10)
+        self.incorrect_answers_label.config(text=incorrect_answers_text)
+        self.incorrect_answers_label.pack(padx=10, pady=10)
+        self.question_label.pack_forget()
+        for widget in self.master.winfo_children()[0].winfo_children():
+            if isinstance(widget, ttk.Radiobutton):
+                widget.pack_forget()
+        self.next_button.pack_forget()
+
+    def start_quiz(self):
+        self.master.mainloop()
+
+
+window = tk.Tk()
+window.title("Начать тест")
+
+window.geometry("300x200")
+window.configure(bg='#FFFFFF')
+
+text = tk.Label(window, text="Добро пожаловать на тест, \nчтобы начать тест нажмите на \nкнопку начать тест!", background='#FFFFFF', foreground='#333333', font=('Arial', 14))
+text.pack(padx=10, pady=10)
+
+button = tk.Button(window, text="Начать тест", command=window.destroy, background='#FFFFFF', foreground='#333333', font=('Arial', 12))
+button.pack(padx=10, pady=10)
+
+window.mainloop()
+
+root = tk.Tk()
+filetypes = (("Текстовый файл", "*.txt"),
+             ("Изображение", "*.jpg *.gif *.png"),
+             ("Любой", "*"))
+filename = filedialog.askopenfilename(title="Открыть файл", initialdir="/", filetypes=filetypes)
+app = Quiz(root, filename)
+app.start_quiz()
